@@ -1,4 +1,7 @@
 <Solution>
   <Project Path="SchoolAdmission.Api/SchoolAdmission.Api.csproj" />
+  <Project Path="SchoolAdmission.Application/SchoolAdmission.Application.csproj" Id="03b305bf-aeea-4b74-a96d-815d049dab3f" />
+  <Project Path="SchoolAdmission.Domain/SchoolAdmission.Domain.csproj" Id="304d02ea-6130-4473-9dc2-c9569d8ced60" />
+  <Project Path="SchoolAdmission.Infrastructure/SchoolAdmission.Infrastructure.csproj" Id="1472480d-836d-4198-a5c5-77d368615acb" />
   <Project Path="SchoolAdmission.Tests/SchoolAdmission.Tests.csproj" />
 </Solution>
