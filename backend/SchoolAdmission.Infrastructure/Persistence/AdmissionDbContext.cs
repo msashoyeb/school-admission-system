@@ -14,3 +14,6 @@ namespace SchoolAdmission.Infrastructure.Persistence
         }
     }
 }
+
+// dotnet ef migrations add InitialCreate --project backend/SchoolAdmission.Infrastructure --startup-project backend/SchoolAdmission.Api --output-dir Persistence/Migrations --no-build
+// dotnet ef database update --project backend/SchoolAdmission.Infrastructure --startup-project backend/SchoolAdmission.Api
