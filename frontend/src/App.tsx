@@ -610,7 +610,7 @@ export function App() {
             </div>
           </div>
 
-          <div className="actions-row">
+          {/* <div className="actions-row">
             <button
               type="button"
               disabled={activeStatus !== 'HELD' || busyHoldId === activeHold.holdId}
@@ -626,7 +626,7 @@ export function App() {
             >
               Cancel
             </button>
-          </div>
+          </div> */}
         </section>
       )}
     </main>
