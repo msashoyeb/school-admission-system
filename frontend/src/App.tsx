@@ -357,17 +357,17 @@ export function App() {
       <header className="header-card">
         <div>
           <h1>School Admission System</h1>
-          <p className="muted">First-come, first-served online seat reservation</p>
+          <p className="muted"></p>
         </div>
 
         <div className="student-box">
-          <label htmlFor="student-id-input">Student Birth Registration Number (17 digits)</label>
+          <label htmlFor="student-id-input">Student Birth Registration Number</label>
           <input
             id="student-id-input"
             type="text"
             inputMode="numeric"
             maxLength={17}
-            placeholder="e.g. 20152691234567890"
+            placeholder=""
             value={studentId}
             onChange={(e) => handleStudentIdChange(e.target.value)}
           />
@@ -414,7 +414,7 @@ export function App() {
             <input
               id="class-name-input"
               type="text"
-              placeholder="Class 6 - Morning Shift"
+              placeholder=""
               value={className}
               onChange={(e) => setClassName(e.target.value)}
             />
@@ -426,7 +426,7 @@ export function App() {
               id="total-seats-input"
               type="number"
               min={1}
-              placeholder="120"
+              placeholder=""
               value={totalSeatsInput}
               onChange={(e) => setTotalSeatsInput(e.target.value)}
             />
@@ -539,7 +539,7 @@ export function App() {
         </div>
 
         {!validStudentId ? (
-          <p className="muted">Enter your 17-digit birth registration number to view your applications.</p>
+          <p className="muted"></p>
         ) : myHolds.length === 0 ? (
           <p className="muted">No applications found for {trimmedStudentId}.</p>
         ) : (
