@@ -12,9 +12,7 @@ import {
 import type { ClassSummary, HoldDetail, MyHold } from './types/admission';
 import {
   isValidStudentId,
-  loadSelectedHoldId,
   loadStudentId,
-  saveSelectedHoldId,
   saveStudentId,
 } from './utils/studentStorage';
 import { formatCountdown, getRemainingSeconds, resolveEffectiveStatus } from './utils/time';
@@ -34,7 +32,7 @@ export function App() {
   const [studentId, setStudentId] = useState<string>(() => loadStudentId());
   const [classes, setClasses] = useState<ClassSummary[]>([]);
   const [myHolds, setMyHolds] = useState<MyHold[]>([]);
-  const [selectedHoldId, setSelectedHoldId] = useState<string>(() => loadSelectedHoldId());
+  const [selectedHoldId, setSelectedHoldId] = useState<string>('');
   const [activeHold, setActiveHold] = useState<HoldDetail | null>(null);
 
   const [className, setClassName] = useState('');
@@ -90,7 +88,6 @@ export function App() {
     } catch (error) {
       if (error instanceof ApiError && error.status === 404) {
         setSelectedHoldId('');
-        saveSelectedHoldId('');
         setActiveHold(null);
       } else {
         setConnectionError(toErrorMessage(error));
@@ -190,7 +187,6 @@ export function App() {
         }
         if (error instanceof ApiError && error.status === 404) {
           setSelectedHoldId('');
-          saveSelectedHoldId('');
           setActiveHold(null);
         } else {
           setConnectionError(toErrorMessage(error));
@@ -224,7 +220,6 @@ export function App() {
     }
     if (nextValue.trim() !== trimmedStudentId) {
       setSelectedHoldId('');
-      saveSelectedHoldId('');
       setActiveHold(null);
     }
   }
@@ -272,15 +267,7 @@ export function App() {
 
     setApplyingClassId(classItem.id);
     try {
-      const hold = await createHold(classItem.id, trimmedStudentId);
-      setSelectedHoldId(hold.holdId);
-      saveSelectedHoldId(hold.holdId);
-      setActiveHold({
-        holdId: hold.holdId,
-        classId: hold.classId,
-        status: hold.status,
-        expiresAt: hold.expiresAt,
-      });
+      await createHold(classItem.id, trimmedStudentId);
       setNowMs(Date.now());
       setNoticeMessage(`Seat held for "${classItem.name}". Complete payment before it expires.`);
       await Promise.all([refreshClasses(), refreshMyHolds()]);
@@ -398,7 +385,7 @@ export function App() {
             />
             <small className={validStudentId ? 'status-ok' : 'muted'}>
               {!trimmedStudentId
-                ? 'Required before applying for a seat'
+                ? ''
                 : validStudentId
                   ? 'Valid 17-digit Student ID'
                   : 'Must be exactly 17 digits'}
@@ -518,46 +505,6 @@ export function App() {
         )}
       </section>
 
-      {activeTab === 'guardian' && activeHold && activeStatus && (
-        <section className="card">
-          <h2>Application Details</h2>
-          <div className="detail-grid">
-            <div>
-              <strong>Class:</strong> {findClassName(activeHold.classId)}
-            </div>
-            <div>
-              <strong>Hold ID:</strong> {activeHold.holdId}
-            </div>
-            <div>
-              <strong>Status:</strong>{' '}
-              <span className={`badge badge-${activeStatus.toLowerCase()}`}>{activeStatus}</span>
-            </div>
-            <div>
-              <strong>Time Remaining:</strong>{' '}
-              {activeStatus === 'HELD' ? formatCountdown(activeRemainingSeconds) : '00:00'}
-            </div>
-          </div>
-
-          <div className="actions-row">
-            <button
-              type="button"
-              disabled={activeStatus !== 'HELD' || busyHoldId === activeHold.holdId}
-              onClick={() => void handleConfirmHold(activeHold.holdId)}
-            >
-              {busyHoldId === activeHold.holdId ? 'Processing...' : 'Pay Admission Fee'}
-            </button>
-            <button
-              type="button"
-              className="btn-secondary"
-              disabled={activeStatus !== 'HELD' || busyHoldId === activeHold.holdId}
-              onClick={() => void handleCancelHold(activeHold.holdId)}
-            >
-              Cancel
-            </button>
-          </div>
-        </section>
-      )}
-
       {activeTab === 'guardian' && (
         <section className="card">
           <div className="section-head">
@@ -602,14 +549,18 @@ export function App() {
                           type="button"
                           className="btn-secondary"
                           onClick={() => {
-                            setSelectedHoldId(hold.holdId);
-                            saveSelectedHoldId(hold.holdId);
-                            setActiveHold({
-                              holdId: hold.holdId,
-                              classId: hold.classId,
-                              status: hold.status,
-                              expiresAt: hold.expiresAt,
-                            });
+                            if (selectedHoldId === hold.holdId) {
+                              setSelectedHoldId('');
+                              setActiveHold(null);
+                            } else {
+                              setSelectedHoldId(hold.holdId);
+                              setActiveHold({
+                                holdId: hold.holdId,
+                                classId: hold.classId,
+                                status: hold.status,
+                                expiresAt: hold.expiresAt,
+                              });
+                            }
                           }}
                         >
                           View
@@ -636,6 +587,46 @@ export function App() {
               </tbody>
             </table>
           )}
+        </section>
+      )}
+
+      {activeTab === 'guardian' && activeHold && activeStatus && (
+        <section className="card">
+          <h2>Application Details</h2>
+          <div className="detail-grid">
+            <div>
+              <strong>Class:</strong> {findClassName(activeHold.classId)}
+            </div>
+            <div>
+              <strong>Hold ID:</strong> {activeHold.holdId}
+            </div>
+            <div>
+              <strong>Status:</strong>{' '}
+              <span className={`badge badge-${activeStatus.toLowerCase()}`}>{activeStatus}</span>
+            </div>
+            <div>
+              <strong>Time Remaining:</strong>{' '}
+              {activeStatus === 'HELD' ? formatCountdown(activeRemainingSeconds) : '00:00'}
+            </div>
+          </div>
+
+          <div className="actions-row">
+            <button
+              type="button"
+              disabled={activeStatus !== 'HELD' || busyHoldId === activeHold.holdId}
+              onClick={() => void handleConfirmHold(activeHold.holdId)}
+            >
+              {busyHoldId === activeHold.holdId ? 'Processing...' : 'Pay Admission Fee'}
+            </button>
+            <button
+              type="button"
+              className="btn-secondary"
+              disabled={activeStatus !== 'HELD' || busyHoldId === activeHold.holdId}
+              onClick={() => void handleCancelHold(activeHold.holdId)}
+            >
+              Cancel
+            </button>
+          </div>
         </section>
       )}
     </main>

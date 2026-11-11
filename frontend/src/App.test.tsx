@@ -71,7 +71,6 @@ describe('App', () => {
 
     const studentId = '20152691234567890';
     window.localStorage.setItem('school_admission_student_id', studentId);
-    window.localStorage.setItem('school_admission_selected_hold_id', 'h_exp');
 
     const expiresAt = new Date(baseTime.getTime() + 2000).toISOString();
 
@@ -81,7 +80,17 @@ describe('App', () => {
         return Promise.resolve(jsonResponse([]));
       }
       if (url.endsWith('/me/holds')) {
-        return Promise.resolve(jsonResponse([]));
+        return Promise.resolve(
+          jsonResponse([
+            {
+              holdId: 'h_exp',
+              classId: 'c_1',
+              className: 'Class 6 - Morning Shift',
+              status: 'HELD',
+              expiresAt,
+            },
+          ]),
+        );
       }
       if (url.endsWith('/holds/h_exp')) {
         return Promise.resolve(
@@ -104,16 +113,27 @@ describe('App', () => {
       await Promise.resolve();
     });
 
-    const payButton = screen.getByRole('button', { name: 'Pay Admission Fee' });
-    expect(screen.getByText('HELD')).toBeInTheDocument();
-    expect(payButton).toBeEnabled();
+    expect(screen.queryByRole('heading', { name: 'Application Details' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'View' }));
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(screen.getByRole('heading', { name: 'Application Details' })).toBeInTheDocument();
+    const payButtons = screen.getAllByRole('button', { name: 'Pay Admission Fee' });
+    expect(screen.getAllByText('HELD').length).toBeGreaterThanOrEqual(1);
+    expect(payButtons.every((button) => !button.hasAttribute('disabled'))).toBe(true);
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(2500);
     });
 
-    expect(screen.getByText('EXPIRED')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Pay Admission Fee' })).toBeDisabled();
+    expect(screen.getAllByText('EXPIRED').length).toBeGreaterThanOrEqual(1);
+    expect(
+      screen.getAllByRole('button', { name: 'Pay Admission Fee' }).every((button) => button.hasAttribute('disabled')),
+    ).toBe(true);
   });
 
   it('shows a user-friendly error message when the backend is unreachable or returns 409', async () => {
@@ -181,6 +201,14 @@ describe('App', () => {
       },
     ];
 
+    let myHoldsState: Array<{
+      holdId: string;
+      classId: string;
+      className: string;
+      status: string;
+      expiresAt: string;
+    }> = [];
+
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       const method = init?.method ?? 'GET';
@@ -201,20 +229,27 @@ describe('App', () => {
 
       if (url.endsWith('/classes/c_1/holds') && method === 'POST') {
         const headers = init?.headers as Record<string, string>;
-        return jsonResponse(
+        const createdHold = {
+          holdId: 'h_99',
+          classId: 'c_1',
+          studentId: headers['X-Student-Id'],
+          status: 'HELD',
+          expiresAt: new Date(Date.now() + 600_000).toISOString(),
+        };
+        myHoldsState = [
           {
-            holdId: 'h_99',
-            classId: 'c_1',
-            studentId: headers['X-Student-Id'],
-            status: 'HELD',
-            expiresAt: new Date(Date.now() + 600_000).toISOString(),
+            holdId: createdHold.holdId,
+            classId: createdHold.classId,
+            className: 'Class 6 - Morning Shift',
+            status: createdHold.status,
+            expiresAt: createdHold.expiresAt,
           },
-          201,
-        );
+        ];
+        return jsonResponse(createdHold, 201);
       }
 
       if (url.endsWith('/me/holds')) {
-        return jsonResponse([]);
+        return jsonResponse(myHoldsState);
       }
 
       if (url.endsWith('/holds/h_99')) {
@@ -257,9 +292,16 @@ describe('App', () => {
     const applyButtons = screen.getAllByRole('button', { name: 'Apply' });
     fireEvent.click(applyButtons[0]);
 
+    const viewButton = await screen.findByRole('button', { name: 'View' });
+    expect(screen.queryByRole('heading', { name: 'Application Details' })).not.toBeInTheDocument();
+
+    fireEvent.click(viewButton);
     await waitFor(() => {
       expect(screen.getByText('h_99')).toBeInTheDocument();
     });
+
+    fireEvent.click(viewButton);
+    expect(screen.queryByRole('heading', { name: 'Application Details' })).not.toBeInTheDocument();
 
     const holdCall = fetchMock.mock.calls.find(
       (call) => String(call[0]).endsWith('/classes/c_1/holds') && call[1]?.method === 'POST',
