@@ -19,6 +19,24 @@ body {
   gap: 16px;
 }
 
+.tabs {
+  display: flex;
+  gap: 8px;
+}
+
+.tab {
+  background: #ffffff;
+  color: #1f2937;
+  border: 1px solid #d1d5db;
+  padding: 8px 18px;
+}
+
+.tab-active {
+  background: #2563eb;
+  color: #ffffff;
+  border-color: #1d4ed8;
+}
+
 .header-card,
 .card {
   background: #ffffff;

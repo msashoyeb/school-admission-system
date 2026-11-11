@@ -233,6 +233,11 @@ describe('App', () => {
     render(<App />);
 
     expect(await screen.findByText('Class 6 - Morning Shift')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Create Class (School Admin)' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'School Admin' }));
+    expect(screen.queryByLabelText(/Student Birth Registration Number/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Apply' })).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText('Class Name'), {
       target: { value: 'Class 6 - Day Shift' },
@@ -244,6 +249,7 @@ describe('App', () => {
 
     expect(await screen.findByText('Class 6 - Day Shift')).toBeInTheDocument();
 
+    fireEvent.click(screen.getByRole('button', { name: 'Guardian' }));
     fireEvent.change(screen.getByLabelText(/Student Birth Registration Number/i), {
       target: { value: '20152691234567890' },
     });

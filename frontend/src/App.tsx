@@ -30,6 +30,7 @@ function toErrorMessage(error: unknown): string {
 }
 
 export function App() {
+  const [activeTab, setActiveTab] = useState<'guardian' | 'admin'>('guardian');
   const [studentId, setStudentId] = useState<string>(() => loadStudentId());
   const [classes, setClasses] = useState<ClassSummary[]>([]);
   const [myHolds, setMyHolds] = useState<MyHold[]>([]);
@@ -352,33 +353,58 @@ export function App() {
     ? getRemainingSeconds(activeHold.expiresAt, nowMs)
     : 0;
 
+  function handleTabChange(tab: 'guardian' | 'admin') {
+    setActiveTab(tab);
+    setActionError(null);
+    setNoticeMessage(null);
+  }
+
   return (
     <main className="page">
+      <nav className="tabs" aria-label="User role tabs">
+        <button
+          type="button"
+          className={activeTab === 'guardian' ? 'tab tab-active' : 'tab'}
+          onClick={() => handleTabChange('guardian')}
+        >
+          Guardian
+        </button>
+        <button
+          type="button"
+          className={activeTab === 'admin' ? 'tab tab-active' : 'tab'}
+          onClick={() => handleTabChange('admin')}
+        >
+          School Admin
+        </button>
+      </nav>
+
       <header className="header-card">
         <div>
           <h1>School Admission System</h1>
           <p className="muted"></p>
         </div>
 
-        <div className="student-box">
-          <label htmlFor="student-id-input">Student Birth Registration Number</label>
-          <input
-            id="student-id-input"
-            type="text"
-            inputMode="numeric"
-            maxLength={17}
-            placeholder=""
-            value={studentId}
-            onChange={(e) => handleStudentIdChange(e.target.value)}
-          />
-          <small className={validStudentId ? 'status-ok' : 'muted'}>
-            {!trimmedStudentId
-              ? 'Required before applying for a seat'
-              : validStudentId
-                ? 'Valid 17-digit Student ID'
-                : 'Must be exactly 17 digits'}
-          </small>
-        </div>
+        {activeTab === 'guardian' && (
+          <div className="student-box">
+            <label htmlFor="student-id-input">Student Birth Registration Number</label>
+            <input
+              id="student-id-input"
+              type="text"
+              inputMode="numeric"
+              maxLength={17}
+              placeholder=""
+              value={studentId}
+              onChange={(e) => handleStudentIdChange(e.target.value)}
+            />
+            <small className={validStudentId ? 'status-ok' : 'muted'}>
+              {!trimmedStudentId
+                ? 'Required before applying for a seat'
+                : validStudentId
+                  ? 'Valid 17-digit Student ID'
+                  : 'Must be exactly 17 digits'}
+            </small>
+          </div>
+        )}
       </header>
 
       {displayedError && (
@@ -406,37 +432,39 @@ export function App() {
         </div>
       )}
 
-      <section className="card">
-        <h2>Create Class (School Admin)</h2>
-        <form className="inline-form" onSubmit={handleCreateClass}>
-          <div className="field">
-            <label htmlFor="class-name-input">Class Name</label>
-            <input
-              id="class-name-input"
-              type="text"
-              placeholder=""
-              value={className}
-              onChange={(e) => setClassName(e.target.value)}
-            />
-          </div>
+      {activeTab === 'admin' && (
+        <section className="card">
+          <h2>Create Class (School Admin)</h2>
+          <form className="inline-form" onSubmit={handleCreateClass}>
+            <div className="field">
+              <label htmlFor="class-name-input">Class Name</label>
+              <input
+                id="class-name-input"
+                type="text"
+                placeholder=""
+                value={className}
+                onChange={(e) => setClassName(e.target.value)}
+              />
+            </div>
 
-          <div className="field field-small">
-            <label htmlFor="total-seats-input">Total Seats</label>
-            <input
-              id="total-seats-input"
-              type="number"
-              min={1}
-              placeholder=""
-              value={totalSeatsInput}
-              onChange={(e) => setTotalSeatsInput(e.target.value)}
-            />
-          </div>
+            <div className="field field-small">
+              <label htmlFor="total-seats-input">Total Seats</label>
+              <input
+                id="total-seats-input"
+                type="number"
+                min={1}
+                placeholder=""
+                value={totalSeatsInput}
+                onChange={(e) => setTotalSeatsInput(e.target.value)}
+              />
+            </div>
 
-          <button type="submit" disabled={isCreatingClass}>
-            {isCreatingClass ? 'Creating...' : 'Create Class'}
-          </button>
-        </form>
-      </section>
+            <button type="submit" disabled={isCreatingClass}>
+              {isCreatingClass ? 'Creating...' : 'Create Class'}
+            </button>
+          </form>
+        </section>
+      )}
 
       <section className="card">
         <div className="section-head">
@@ -457,7 +485,7 @@ export function App() {
                 <th>Held</th>
                 <th>Confirmed</th>
                 <th>Available</th>
-                <th>Action</th>
+                {activeTab === 'guardian' && <th>Action</th>}
               </tr>
             </thead>
             <tbody>
@@ -468,19 +496,21 @@ export function App() {
                   <td>{item.heldSeats}</td>
                   <td>{item.confirmedSeats}</td>
                   <td>{item.availableSeats}</td>
-                  <td>
-                    <button
-                      type="button"
-                      disabled={item.availableSeats <= 0 || applyingClassId === item.id}
-                      onClick={() => void handleApply(item)}
-                    >
-                      {applyingClassId === item.id
-                        ? 'Applying...'
-                        : item.availableSeats <= 0
-                          ? 'Full'
-                          : 'Apply'}
-                    </button>
-                  </td>
+                  {activeTab === 'guardian' && (
+                    <td>
+                      <button
+                        type="button"
+                        disabled={item.availableSeats <= 0 || applyingClassId === item.id}
+                        onClick={() => void handleApply(item)}
+                      >
+                        {applyingClassId === item.id
+                          ? 'Applying...'
+                          : item.availableSeats <= 0
+                            ? 'Full'
+                            : 'Apply'}
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -488,7 +518,7 @@ export function App() {
         )}
       </section>
 
-      {activeHold && activeStatus && (
+      {activeTab === 'guardian' && activeHold && activeStatus && (
         <section className="card">
           <h2>Application Details</h2>
           <div className="detail-grid">
@@ -528,84 +558,86 @@ export function App() {
         </section>
       )}
 
-      <section className="card">
-        <div className="section-head">
-          <h2>My Applications</h2>
-          {validStudentId && (
-            <button type="button" className="btn-secondary" onClick={() => void refreshMyHolds()}>
-              Refresh
-            </button>
+      {activeTab === 'guardian' && (
+        <section className="card">
+          <div className="section-head">
+            <h2>My Applications</h2>
+            {validStudentId && (
+              <button type="button" className="btn-secondary" onClick={() => void refreshMyHolds()}>
+                Refresh
+              </button>
+            )}
+          </div>
+
+          {!validStudentId ? (
+            <p className="muted"></p>
+          ) : myHolds.length === 0 ? (
+            <p className="muted">No applications found for {trimmedStudentId}.</p>
+          ) : (
+            <table>
+              <thead>
+                <tr>
+                  <th>Class</th>
+                  <th>Status</th>
+                  <th>Time Remaining</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {myHolds.map((hold) => {
+                  const status = resolveEffectiveStatus(hold.status, hold.expiresAt, nowMs);
+                  const remaining = getRemainingSeconds(hold.expiresAt, nowMs);
+                  const isHeld = status === 'HELD';
+                  const isBusy = busyHoldId === hold.holdId;
+
+                  return (
+                    <tr key={hold.holdId}>
+                      <td>{hold.className || hold.classId}</td>
+                      <td>
+                        <span className={`badge badge-${status.toLowerCase()}`}>{status}</span>
+                      </td>
+                      <td>{isHeld ? formatCountdown(remaining) : '-'}</td>
+                      <td className="actions-cell">
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          onClick={() => {
+                            setSelectedHoldId(hold.holdId);
+                            saveSelectedHoldId(hold.holdId);
+                            setActiveHold({
+                              holdId: hold.holdId,
+                              classId: hold.classId,
+                              status: hold.status,
+                              expiresAt: hold.expiresAt,
+                            });
+                          }}
+                        >
+                          View
+                        </button>
+                        <button
+                          type="button"
+                          disabled={!isHeld || isBusy}
+                          onClick={() => void handleConfirmHold(hold.holdId)}
+                        >
+                          Pay Admission Fee
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          disabled={!isHeld || isBusy}
+                          onClick={() => void handleCancelHold(hold.holdId)}
+                        >
+                          Cancel
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           )}
-        </div>
-
-        {!validStudentId ? (
-          <p className="muted"></p>
-        ) : myHolds.length === 0 ? (
-          <p className="muted">No applications found for {trimmedStudentId}.</p>
-        ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Class</th>
-                <th>Status</th>
-                <th>Time Remaining</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {myHolds.map((hold) => {
-                const status = resolveEffectiveStatus(hold.status, hold.expiresAt, nowMs);
-                const remaining = getRemainingSeconds(hold.expiresAt, nowMs);
-                const isHeld = status === 'HELD';
-                const isBusy = busyHoldId === hold.holdId;
-
-                return (
-                  <tr key={hold.holdId}>
-                    <td>{hold.className || hold.classId}</td>
-                    <td>
-                      <span className={`badge badge-${status.toLowerCase()}`}>{status}</span>
-                    </td>
-                    <td>{isHeld ? formatCountdown(remaining) : '-'}</td>
-                    <td className="actions-cell">
-                      <button
-                        type="button"
-                        className="btn-secondary"
-                        onClick={() => {
-                          setSelectedHoldId(hold.holdId);
-                          saveSelectedHoldId(hold.holdId);
-                          setActiveHold({
-                            holdId: hold.holdId,
-                            classId: hold.classId,
-                            status: hold.status,
-                            expiresAt: hold.expiresAt,
-                          });
-                        }}
-                      >
-                        View
-                      </button>
-                      <button
-                        type="button"
-                        disabled={!isHeld || isBusy}
-                        onClick={() => void handleConfirmHold(hold.holdId)}
-                      >
-                        Pay Admission Fee
-                      </button>
-                      <button
-                        type="button"
-                        className="btn-secondary"
-                        disabled={!isHeld || isBusy}
-                        onClick={() => void handleCancelHold(hold.holdId)}
-                      >
-                        Cancel
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
-      </section>
+        </section>
+      )}
     </main>
   );
 }
